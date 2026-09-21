@@ -1,0 +1,47 @@
+# settings.yaml
+# API headers, rate limits, and model endpoints for the PR-Auditor pipeline.
+# Copy to settings.local.yaml and fill in your own contact email before running.
+
+wikipedia:
+  api_endpoint: "https://en.wikipedia.org/w/api.php"
+  user_agent: "WikiAICitationAuditor/1.0 (mailto:pnp1609@uw.edu)"
+  max_retries: 5
+  rate_limit_per_second: 10   # Wikimedia politeness ceiling: 10-20 req/sec
+  backoff_base_seconds: 1.0
+  backoff_max_seconds: 60.0
+
+noticeboards:
+  treated_page: "Wikipedia:AI_noticeboard"
+  treated_archive_pattern: "Wikipedia:AI_noticeboard/Archive_*"
+  control_logevents_type: "block"
+  control_infraction_tags: ["WP:EW", "WP:NOTHERE"]
+
+openalex:
+  api_endpoint: "https://api.openalex.org"
+  mailto: "pnp1609@uw.edu"   # required for OpenAlex's polite pool
+
+crossref:
+  api_endpoint: "https://api.crossref.org"
+  mailto: "pnp1609@uw.edu"
+
+openlibrary:
+  api_endpoint: "https://openlibrary.org"
+
+storage:
+  engine: "duckdb"            # duckdb | sqlite
+  db_path: "data/processed/pr_auditor.duckdb"
+  cache_table: "academic_lookup_cache"
+
+llm:
+  provider: "ollama"          # ollama | openai | anthropic
+  model: "llama3"             # local inference keeps the pipeline free
+  temperature: 0.0
+
+reinsertion_tracer:
+  windows_days: [7, 30, 90]
+  similarity_threshold: 0.80  # Jaccard / embedding similarity cutoff
+
+econometrics:
+  cluster_var: "user_id"
+  panel_window_months: 6      # T0 +/- 6 months
+
