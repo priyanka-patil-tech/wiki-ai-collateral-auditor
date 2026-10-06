@@ -38,8 +38,35 @@ The pipeline decouples into four discrete, testable architectural layers:
    matrix, difference-in-differences & event-study models, reviewer friction and
    latency metrics.
 
-Full design detail — including the sequence diagram, relational schema, and
-econometric specification — lives in the System Design Document.
++---------------------------------------------------------------+
+|              1. **Ingestion & Discovery**                    |
+|   WP:AINB Scraper      WP:ANI Scraper      Admin Block Logs   |
+|   (Treated Cohort)     (Control Cohort)    API Parser         |
++------------------------------+----------------------------------+
+                               |
+                               v
++---------------------------------------------------------------+
+|          2.  **Revision & Diff Extraction**                 |
+|  usercontribs Fetcher --> Diff Comparator --> Wikitext AST    |
+|  (Async HTTPX Pool)       (action=compare)     Parser/Splitter|
++------------------------------+----------------------------------+
+                               |
+                               v
++---------------------------------------------------------------+
+|            3. **Verification**                    |
+|  SUBSYSTEM 3A: Re-Insertion   |  SUBSYSTEM 3B: Academic       |
+|   Tracer                      |   Auditor                     |
+|  - Scans T0+30d/90d revisions |  - Crossref & OpenAlex tools  |
+|  - Jaccard & DOI match score  |  - LLM abstract grounding     |
++------------------------------+----------------------------------+
+                               |
+                               v
++---------------------------------------------------------------+
+|         4. **Econometrics & Analytics**                   |
+|  DuckDB/Parquet --> Panel Assembler --> DiD / Event Study     |
+|  Storage Layer      (Panel by User-Time)   Models             |
++---------------------------------------------------------------+
+
 
 ## 📂 Repository Structure
 
@@ -135,7 +162,7 @@ effects, clustering standard errors at the user level. See
 specification and primary metrics (Collateral Damage Ratio, Review Latency
 Delta, Re-insertion Rate).
 
-## 📊 Free Public APIs Used
+## 📊 Public APIs Used
 
 - **MediaWiki Action API** — revision histories, user contributions, and
   side-by-side wikitext diffs.
