@@ -27,16 +27,7 @@ platform governance:
 
 The pipeline decouples into four discrete, testable architectural layers:
 
-1. **Ingestion & Discovery** — scrapes WP:AINB & admin logs via the MediaWiki
-   Action API; outputs user cohorts and shock timestamps (T0).
-2. **Revision & Diff Extraction** — MediaWiki `usercontribs` / `compare` /
-   `rvslots`; outputs added text chunks, citation ASTs, diffs.
-3. **Verification** — 3A Re-Insertion Tracer (scans article history at T0+30d/90d)
-   and 3B Agentic Citation Audit (LangChain + Crossref/OpenAlex + hallucination
-   scorer).
-4. **Econometrics & Analytics** — Type I error rate vs. true-positive deletion
-   matrix, difference-in-differences & event-study models, reviewer friction and
-   latency metrics.
+
 
 +---------------------------------------------------------------+
 |              1. **Ingestion & Discovery**                    |
