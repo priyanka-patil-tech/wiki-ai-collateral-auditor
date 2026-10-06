@@ -32,6 +32,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional, List
 
+import re
+
 import mwparserfromhell
 
 CITATION_TEMPLATE_NAMES = {"cite journal", "cite web", "cite book", "citation"}
@@ -86,27 +88,41 @@ class DiffParser:
 
     def parse_removed_chunk(self, wikitext_chunk: str) -> WikipediaClaim:
         """Parses a deleted chunk of wikitext into text and structured citations."""
-        parsed = mwparserfromhell.parse(wikitext_chunk)
+        parsed = mwparserfromhell.parse(wikitext_chunk or "")
         citations: list[ExtractedCitation] = []
 
-        for node in parsed.filter_tags(matches=lambda t: t.tag in ["ref", "citation"]):
-            templates = node.contents.filter_templates()
-            if templates:
-                for template in templates:
-                    name = str(template.name).lower()
-                    if "cite" in name or "citation" in name:
-                        citations.append(
-                            ExtractedCitation(
-                                raw_text=str(template),
-                                doi=self.extract_param(template, "doi"),
-                                isbn=self.extract_param(template, "isbn"),
-                                title=self.extract_param(template, "title"),
+        for node in parsed.nodes:
+            if getattr(node, "tag", None) in ["ref", "citation"]:
+                templates = node.contents.filter_templates()
+                if templates:
+                    for template in templates:
+                        name = str(template.name).lower()
+                        if "cite" in name or "citation" in name:
+                            citations.append(
+                                ExtractedCitation(
+                                    raw_text=str(template),
+                                    doi=self.extract_param(template, "doi"),
+                                    isbn=self.extract_param(template, "isbn"),
+                                    title=self.extract_param(template, "title"),
+                                )
                             )
-                        )
-            else:
-                citations.append(ExtractedCitation(raw_text=str(node.contents)))
+                else:
+                    citations.append(ExtractedCitation(raw_text=str(node.contents)))
+
+        for template in parsed.filter_templates():
+            name = str(template.name).lower()
+            if "cite" in name or "citation" in name:
+                citations.append(
+                    ExtractedCitation(
+                        raw_text=str(template),
+                        doi=self.extract_param(template, "doi"),
+                        isbn=self.extract_param(template, "isbn"),
+                        title=self.extract_param(template, "title"),
+                    )
+                )
 
         clean_text = parsed.strip_code().strip()
+        clean_text = re.sub(r"\s+", " ", clean_text)
         return WikipediaClaim(encyclopedic_text=clean_text, citations=citations)
 
 
@@ -116,17 +132,30 @@ def parse_removed_wikitext(raw_diff_text: str) -> list[ExtractedClaim]:
     claim = parser.parse_removed_chunk(raw_diff_text)
 
     results: list[ExtractedClaim] = []
-    for citation in claim.citations:
-        results.append(
-            ExtractedClaim(
-                claim_id="",
-                revision_id=-1,
-                claim_text=claim.encyclopedic_text,
-                doi=citation.doi,
-                isbn=citation.isbn,
-                raw_citation=citation.raw_text,
+    if claim.encyclopedic_text:
+        if claim.citations:
+            for citation in claim.citations:
+                results.append(
+                    ExtractedClaim(
+                        claim_id="",
+                        revision_id=-1,
+                        claim_text=claim.encyclopedic_text,
+                        doi=citation.doi,
+                        isbn=citation.isbn,
+                        raw_citation=citation.raw_text,
+                    )
+                )
+        else:
+            results.append(
+                ExtractedClaim(
+                    claim_id="",
+                    revision_id=-1,
+                    claim_text=claim.encyclopedic_text,
+                    doi=None,
+                    isbn=None,
+                    raw_citation="",
+                )
             )
-        )
     return results
 
 
